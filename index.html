@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+// 強制避開手機內建瀏覽器（LINE／FB 等 App 內嵌瀏覽器）的頑固快取，
+// 確保每次打開都抓到最新版本，不用手動清快取。
+(function () {
+  if (!location.search.includes('_v=')) {
+    location.replace(location.pathname + '?_v=' + Date.now());
+  }
+})();
+</script>
+<title>Google 評論合約產生器</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #152540;
+  --gold:   #b89a3e;
+  --gold-lt:#f0e6c0;
+  --red:    #b52b2b;
+  --gray1:  #f7f8fa;
+  --gray2:  #e4e6ea;
+  --gray3:  #999;
+  --text:   #1a1a1a;
+  --panel-w:330px;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
+  font-size: 16px;
+  color: var(--text);
+  background: #d4d8e0;
+}
+
+/* ── APP SHELL ── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── SETTINGS PANEL ── */
+.panel {
+  width: var(--panel-w);
+  min-width: var(--panel-w);
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 3px 0 18px rgba(0,0,0,.28);
+  z-index: 10;
+}
+.panel {
+  transition: width 0.28s cubic-bezier(.4,0,.2,1), min-width 0.28s cubic-bezier(.4,0,.2,1);
+}
+.panel.collapsed {
+  width: 38px !important;
+  min-width: 38px !important;
+}
+.panel.collapsed .panel-body,
+.panel.collapsed .panel-footer,
+.panel.collapsed .panel-header-main {
+  display: none !important;
+}
+.panel.collapsed .panel-header {
+  padding: 12px 0;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  border-bottom: none;
+  height: 100%;
+  gap: 0;
+}
+
+.panel-header {
+  padding: 18px 20px 14px;
+  background: rgba(0,0,0,.22);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.panel-header-main {
+  flex: 1;
+  min-width: 0;
+}
+.panel-header h1 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+.panel-header p {
+  font-size: 12.5px;
+  color: rgba(255,255,255,.5);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* 收合 / 展開小按鈕 */
+.panel-collapse-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 4px;
+  color: rgba(255,255,255,.65);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s;
+  line-height: 1;
+  padding: 0;
+}
+.panel-collapse-btn:hover {
+  background: rgba(255,255,255,.22);
+  color: #fff;
+}
+/* 收合時按鈕旋轉方向提示 */
+.panel.collapsed .panel-collapse-btn {
+  margin-top: 0;
+  font-size: 13px;
+  width: 28px;
+  height: 28px;
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+.panel-body::-webkit-scrollbar { width: 4px; }
+.panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 4px; }
+
+.sgroup { margin-bottom: 20px; }
+.sgroup-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.srow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.srow label {
+  font-size: 12.5px;
+  color: rgba(255,255,255,.65);
+  font-weight: 500;
+}
+.srow input[type="text"],
+.srow input[type="number"],
+.srow input[type="date"],
+.srow textarea {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 14.5px;
+  color: #fff;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  transition: border-color .15s, background .15s;
+}
+.srow input:focus, .srow textarea:focus {
+  border-color: var(--gold);
+  background: rgba(255,255,255,.15);
+}
+.srow textarea { height: 72px; resize: vertical; line-height: 1.5; }
+
+/* toggle */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.toggle-row > label:first-child {
+  font-size: 13px;
+  color: rgba(255,255,255,.85);
+  font-weight: 600;
+}
+.toggle {
+  position: relative;
+  width: 42px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,.2);
+  border-radius: 22px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.toggle input:checked + .toggle-track { background: var(--gold); }
+.toggle-track::before {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  left: 3px; top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform .2s;
+}
+.toggle input:checked + .toggle-track::before { transform: translateX(20px); }
+
+.warranty-sub {
+  background: rgba(184,154,62,.1);
+  border: 1px solid rgba(184,154,62,.3);
+  border-radius: 6px;
+  padding: 10px 10px 4px;
+  margin-bottom: 8px;
+}
+.warranty-sub.hidden { display: none; }
+
+/* panel footer */
+.panel-footer {
+  padding: 14px 16px;
+  background: rgba(0,0,0,.22);
+  border-top: 1px solid rgba(255,255,255,.1);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.btn-print {
+  background: var(--gold);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 13px 0;
+  font-size: 14.5px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: opacity .15s;
+}
+.btn-print:hover { opacity: .86; }
+.btn-reset {
+  background: transparent;
+  color: rgba(255,255,255,.4);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 6px;
+  padding: 7px 0;
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+  transition: all .15s;
+}
+.btn-reset:hover { color: rgba(255,255,255,.75); border-color: rgba(255,255,255,.35); }
+.btn-client {
+  background: #1a7a4a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 13px 0;
+  font-size: 14.5px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: opacity .15s;
+}
+.btn-client:hover { opacity: .86; }
+.btn-print-mine {
+  background: transparent;
+  color: rgba(255,255,255,.55);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 6px;
+  padding: 8px 0;
+  font-size: 12.5px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all .15s;
+}
+.btn-print-mine:hover { color: rgba(255,255,255,.85); border-color: rgba(255,255,255,.4); }
+
+/* ── CONTRACT AREA ── */
+.contract-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 28px 60px;
+}
+
+/* ── CONTRACT DOC ── */
+.contract-doc {
+  max-width: 820px;
+  margin: 0 auto;
+  background: #fff;
+  box-shadow: 0 4px 28px rgba(0,0,0,.16);
+}
+
+/* doc header */
+.doc-header {
+  background: var(--navy);
+  color: #fff;
+  padding: 28px 40px 22px;
+  border-bottom: 4px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.doc-header-left .eyebrow {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.doc-header-left h2 {
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1.35;
+}
+.doc-header-right {
+  text-align: right;
+  font-size: 13px;
+  color: rgba(255,255,255,.55);
+  line-height: 2;
+}
+.doc-header-right strong { color: #fff; font-size: 14px; }
+
+/* doc body */
+.doc-body { padding: 30px 40px 36px; }
+
+/* section */
+.dsec { margin-bottom: 26px; }
+.dsec-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--navy);
+  border-left: 3px solid var(--gold);
+  padding-left: 9px;
+  margin-bottom: 14px;
+}
+
+/* info grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.info-row { display: flex; flex-direction: column; gap: 4px; }
+.info-row .ilabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--gray3);
+}
+.info-row input[type="text"],
+.info-row input[type="tel"] {
+  height: 42px;
+  border: 1.5px solid var(--gray2);
+  border-radius: 4px;
+  padding: 0 12px;
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--gray1);
+  outline: none;
+  color: var(--text);
+}
+.info-row input:focus { border-color: var(--navy); background: #fff; }
+.req { color: var(--red); }
+
+/* service table */
+.svc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+.svc-table th {
+  background: var(--navy);
+  color: #fff;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+.svc-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gray2);
+  vertical-align: top;
+  line-height: 1.65;
+}
+.svc-table tr:nth-child(even) td { background: var(--gray1); }
+.price-val {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 16px;
+  white-space: nowrap;
+}
+.badge {
+  display: inline-block;
+  background: var(--gold-lt);
+  color: #7a6318;
+  border: 1px solid var(--gold);
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 0 5px;
+  margin-left: 4px;
+}
+
+/* warranty box */
+.warranty-box {
+  background: var(--gold-lt);
+  border: 1.5px solid var(--gold);
+  border-radius: 5px;
+  padding: 14px 16px;
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+}
+.warranty-box .wico { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+.warranty-box .wtitle { font-weight: 700; color: #6b520e; font-size: 15px; margin-bottom: 5px; }
+.warranty-box p { font-size: 14px; color: #7a6318; line-height: 1.65; }
+.warranty-box.hidden { display: none; }
+
+.no-warranty-note {
+  background: #f5f5f5;
+  border: 1px solid var(--gray2);
+  border-radius: 5px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  font-size: 14.5px;
+  color: #555;
+  line-height: 1.65;
+}
+.no-warranty-note.hidden { display: none; }
+
+/* clause list */
+.clause-list { list-style: none; }
+.clause-list li {
+  display: flex;
+  gap: 11px;
+  padding: 8px 0;
+  font-size: 14.5px;
+  line-height: 1.75;
+  border-bottom: 1px dashed var(--gray2);
+}
+.clause-list li:last-child { border-bottom: none; }
+.cnum {
+  flex-shrink: 0;
+  width: 23px; height: 23px;
+  background: var(--navy);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* risk box */
+.risk-box {
+  background: #fff5f5;
+  border: 1.5px solid #e57373;
+  border-radius: 5px;
+  padding: 15px 17px;
+}
+.risk-title {
+  font-weight: 700;
+  color: var(--red);
+  font-size: 15px;
+  margin-bottom: 11px;
+}
+.risk-list { list-style: none; }
+.risk-list li {
+  font-size: 14px;
+  padding: 5px 0 5px 18px;
+  position: relative;
+  color: #5a1a1a;
+  line-height: 1.7;
+}
+.risk-list li::before {
+  content: '▸';
+  position: absolute;
+  left: 0; top: 6px;
+  color: var(--red);
+  font-size: 10px;
+}
+
+/* agree section */
+.agree-wrap {
+  background: #fffbf0;
+  border: 1.5px solid var(--gold);
+  border-radius: 5px;
+  padding: 15px 17px;
+}
+.agree-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  font-size: 14.5px;
+  line-height: 1.75;
+  cursor: default;
+}
+.agree-item:last-child { margin-bottom: 0; }
+.agree-item input[type="checkbox"] {
+  display: none;
+}
+.agree-item .chk-icon {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  margin-top: 2px;
+  background: #22a84a;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgba(34,168,74,.35);
+}
+.agree-item strong { color: var(--red); }
+
+/* auto-check note */
+.auto-check-note {
+  font-size: 12.5px;
+  color: var(--gray3);
+  margin-bottom: 11px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* sig area — 雙簽名格 */
+.sig-area {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+/* 雙簽名欄（並排） */
+.sig-double {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.sig-block { display: flex; flex-direction: column; gap: 7px; }
+.sig-block .slabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gray3);
+}
+.sig-canvas-wrap {
+  border: 2px dashed #bbb;
+  border-radius: 5px;
+  background: #fafafa;
+  height: 130px;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color .15s, background .15s;
+}
+.sig-canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+.sig-hint {
+  position: absolute;
+  bottom: 8px; left: 0; right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #c0c0c0;
+  pointer-events: none;
+  user-select: none;
+}
+.sig-clear {
+  font-size: 12px;
+  color: var(--gray3);
+  border: 1px solid var(--gray2);
+  background: #fff;
+  border-radius: 3px;
+  padding: 4px 10px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all .15s;
+}
+.sig-clear:hover { border-color: var(--red); color: var(--red); }
+
+/* 客戶用大按鈕（合約右側，手機操作） */
+.client-save-btn {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 16px 0;
+  background: var(--navy);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 0.5px;
+  transition: opacity .15s;
+}
+.client-save-btn:hover { opacity: .85; }
+
+.mobile-pdf-hint {
+  display: block;
+  margin-top: 10px;
+  padding: 11px 14px;
+  background: #f0f7ff;
+  border: 1px solid #b0d0f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #3a5a80;
+  line-height: 1.85;
+}
+
+.date-field { margin-top: 8px; }
+.date-field .dlabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--gray3);
+  margin-bottom: 5px;
+  display: block;
+}
+.date-field input[type="date"] {
+  height: 40px;
+  border: 1.5px solid var(--gray2);
+  border-radius: 4px;
+  padding: 0 12px;
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--gray1);
+  outline: none;
+  color: var(--text);
+  width: 100%;
+}
+.date-field input:focus { border-color: var(--navy); }
+
+.line-preview {
+  background: var(--gray1);
+  border: 1.5px solid var(--gray2);
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+.sig-footnote {
+  font-size: 12px;
+  color: #999;
+  line-height: 1.75;
+  margin-top: 6px;
+}
+
+.provider-line {
+  display: flex;
+  gap: 32px;
+  font-size: 14px;
+  color: #777;
+  margin-top: 18px;
+  padding-top: 15px;
+  border-top: 1px solid var(--gray2);
+}
+.provider-line .pline {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+}
+.provider-line .pline-val {
+  flex: 1;
+  border-bottom: 1px solid #ccc;
+  height: 18px;
+  min-width: 110px;
+}
+
+/* doc footer */
+.doc-footer {
+  background: var(--navy);
+  color: rgba(255,255,255,.5);
+  font-size: 12.5px;
+  padding: 14px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 3px solid var(--gold);
+}
+.doc-footer strong { color: #fff; }
+
+/* ── SIGNATURE MODAL ── */
+.sig-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.sig-modal-overlay.open { display: flex; }
+
+.sig-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sig-modal-header {
+  background: var(--navy);
+  color: #fff;
+  padding: 16px 20px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.sig-modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+.sig-modal-header p {
+  font-size: 12px;
+  color: rgba(255,255,255,.5);
+  margin-top: 3px;
+}
+.sig-modal-close {
+  background: rgba(255,255,255,.15);
+  border: none;
+  color: #fff;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.sig-modal-close:hover { background: rgba(255,255,255,.28); }
+
+.sig-modal-canvas-wrap {
+  background: #fafafa;
+  border: 2.5px dashed #c0c0c0;
+  border-radius: 8px;
+  margin: 18px 18px 0;
+  height: 240px;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+  flex-shrink: 0;
+}
+@media (max-height: 600px) {
+  .sig-modal-canvas-wrap { height: 160px; }
+}
+.sig-modal-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sig-modal-hint {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 15px;
+  color: #ccc;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1.6;
+}
+.sig-modal-hint .hint-icon { font-size: 32px; display: block; margin-bottom: 6px; }
+
+.sig-modal-actions {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px 18px;
+  flex-shrink: 0;
+}
+.sig-modal-clear {
+  background: #fff;
+  color: var(--gray3);
+  border: 1.5px solid var(--gray2);
+  border-radius: 7px;
+  padding: 0 18px;
+  height: 48px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.sig-modal-clear:hover { border-color: var(--red); color: var(--red); }
+.sig-modal-confirm {
+  flex: 1;
+  background: var(--navy);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  height: 48px;
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: opacity .15s;
+}
+.sig-modal-confirm:hover { opacity: .86; }
+
+/* make the contract sig boxes clickable to open modal */
+.sig-canvas-wrap {
+  cursor: pointer !important;
+}
+.sig-canvas-wrap:hover {
+  border-color: var(--navy);
+  background: #f0f2f7;
+}
+.sig-open-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.sig-open-hint .soh-icon { font-size: 28px; }
+.sig-open-hint .soh-text {
+  font-size: 13px;
+  color: #aaa;
+  font-weight: 500;
+}
+.sig-canvas-wrap.has-sig .sig-open-hint { display: none; }
+/* hide old hint when modal system is active */
+.sig-canvas-wrap .sig-hint { display: none !important; }
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 640px) {
+  .panel {
+    position: fixed;
+    inset: 0 auto 0 0;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(.4,0,.2,1) !important;
+    width: min(var(--panel-w), 85vw) !important;
+    min-width: 0 !important;
+    z-index: 200;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .panel.mobile-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 32px rgba(0,0,0,.45);
+  }
+  /* 桌面收合按鈕在手機隱藏 */
+  .panel-collapse-btn { display: none !important; }
+
+  .contract-area {
+    width: 100vw;
+    padding: 12px 10px 100px;
+  }
+  .doc-body { padding: 16px 16px 22px; }
+  .doc-header { padding: 16px 16px 14px; flex-wrap: wrap; gap: 10px; }
+  .doc-header-left h2 { font-size: 19px; }
+  .doc-header-right { text-align: left; }
+  .info-grid { grid-template-columns: 1fr; }
+  .sig-double { grid-template-columns: 1fr; gap: 14px; }
+  .sig-area { grid-template-columns: 1fr; }
+  .provider-line { flex-direction: column; gap: 10px; }
+  .doc-footer { padding: 12px 16px; font-size: 11.5px; flex-direction: column; gap: 4px; text-align: center; }
+
+  /* 手機遮罩 */
+  .mobile-panel-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.52);
+    z-index: 199;
+    touch-action: none;
+  }
+  .mobile-panel-overlay.visible { display: block; }
+
+  /* 手機浮動設定按鈕 */
+  .mobile-panel-btn {
+    position: fixed;
+    bottom: 22px;
+    left: 16px;
+    width: 42px;
+    height: 42px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 198;
+    box-shadow: 0 3px 14px rgba(0,0,0,.32);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity .15s, transform .15s;
+  }
+  .mobile-panel-btn:active { transform: scale(.9); }
+}
+
+/* 桌面隱藏手機元件 */
+@media (min-width: 641px) {
+  .mobile-panel-overlay,
+  .mobile-panel-btn { display: none !important; }
+}
+
+/* ── PRINT ── */
+/* @page 高度由 JS 在 beforeprint 動態注入，見 id="dynamic-page-style" */
+@media print {
+  @page { size: 210mm auto; margin: 8mm; }
+
+  /* 全局強制保留背景色與顏色 */
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body { background: #fff; font-size: 15px; }
+  .panel { display: none !important; }
+  .contract-area { padding: 0; background: #fff; overflow: visible; }
+  .app { display: block; height: auto; overflow: visible; }
+  .contract-doc {
+    box-shadow: none;
+    max-width: 100%;
+    /* 移除任何 JS 套用的 transform，避免印出空白 */
+    transform: none !important;
+    transform-origin: unset !important;
+    width: 100% !important;
+    /* 強制不切頁 */
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .sig-clear { display: none !important; }
+  .client-save-btn { display: none !important; }
+  .sig-modal-overlay { display: none !important; }
+  .sig-open-hint { display: none !important; }
+  .mobile-panel-btn { display: none !important; }
+  .mobile-panel-overlay { display: none !important; }
+  .panel-collapse-btn { display: none !important; }
+  .mobile-pdf-hint { display: none !important; }
+  .info-row input { background: transparent !important; border-color: #ccc !important; }
+  .date-field input { background: transparent !important; border-color: #ccc !important; }
+  .auto-check-note { display: none; }
+
+  /* 雙簽名格列印時確保畫布可見 */
+  .sig-double { break-inside: avoid; }
+  .sig-canvas-wrap {
+    border: 1.5px solid #ccc !important;
+    background: #fff !important;
+    height: 110px !important;
+  }
+  /* canvas 在列印時強制顯示內容 */
+  .sig-canvas-wrap canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* 客戶版 PDF：簽名提示文字顯示 */
+  body.client-pdf-mode .sig-hint {
+    display: block !important;
+    font-size: 13px;
+    color: #bbb;
+    bottom: 50%;
+    transform: translateY(50%);
+  }
+  /* 客戶版按鈕也隱藏 */
+  .btn-client { display: none !important; }
+  .btn-print-mine { display: none !important; }
+  .btn-reset { display: none !important; }
+}
+</style>
+<style id="dynamic-page-style"></style>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.11/dist/html2canvas-pro.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══════════ SETTINGS PANEL ═══════════ -->
+<aside class="panel" id="settingsPanel">
+  <div class="panel-header">
+    <div class="panel-header-main">
+      <h1>⚙️ 合約設定</h1>
+      <p>在此調整日期、單價、保固等設定，右側合約即時更新，確認後列印存 PDF 傳給商家。</p>
+    </div>
+    <button class="panel-collapse-btn" id="panelCollapseBtn" onclick="togglePanel()" title="收合設定">◀</button>
+  </div>
+
+  <div class="panel-body">
+
+    <div class="sgroup">
+      <div class="sgroup-title">📅 合約日期</div>
+      <div class="srow">
+        <label>合約日期</label>
+        <input type="date" id="s_date">
+      </div>
+    </div>
+
+    <div class="sgroup">
+      <div class="sgroup-title">💰 收費設定</div>
+      <div class="srow">
+        <label>本次委託則數</label>
+        <input type="number" id="s_qty" value="20" min="1">
+      </div>
+      <div class="srow">
+        <label>基本單價（元 / 則）</label>
+        <input type="number" id="s_price" value="85" min="1">
+      </div>
+      <div class="srow">
+        <label>加附照片費（元 / 則，0 = 不顯示）</label>
+        <input type="number" id="s_photo" value="15" min="0">
+      </div>
+      <div class="srow">
+        <label>指定內文費（元 / 則，0 = 不顯示）</label>
+        <input type="number" id="s_text_fee" value="10" min="0">
+      </div>
+    </div>
+
+    <div class="sgroup">
+      <div class="sgroup-title">🛡 保固設定</div>
+      <div class="toggle-row">
+        <label>此合約含保固？</label>
+        <label class="toggle">
+          <input type="checkbox" id="s_warranty" onchange="toggleWarranty()">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="warranty-sub hidden" id="warranty_sub">
+        <div class="srow">
+          <label>保固方案單價（元 / 則）</label>
+          <input type="number" id="s_wprice" value="300" min="1">
+        </div>
+        <div class="srow">
+          <label>保固天數</label>
+          <input type="number" id="s_wdays" value="15" min="1">
+        </div>
+        <div class="srow">
+          <label>屏蔽補發則數</label>
+          <input type="number" id="s_wqty" value="1" min="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="sgroup">
+      <div class="sgroup-title">📝 備註 / 特殊條款</div>
+      <div class="srow">
+        <label>合約尾部備註（可留空）</label>
+        <textarea id="s_note" placeholder="例：本次議定特殊方案，單價 100 元 / 則。"></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="panel-footer">
+    <button class="btn-client" onclick="generateClientPDF()">📤 產生客戶版 PDF（空白簽名）</button>
+    <button class="btn-print-mine" onclick="validateAndPrint()">🖨️ 列印完整版（含我方簽名）</button>
+    <button class="btn-reset" onclick="if(confirm('確定重置所有設定為預設值？'))resetSettings()">↩ 重置預設值</button>
+  </div>
+</aside>
+
+<!-- ═══════════ CONTRACT ═══════════ -->
+<div class="contract-area">
+<div class="contract-doc" id="contractDoc">
+
+  <div class="doc-header">
+    <div class="doc-header-left">
+      <div class="eyebrow">Service Contract · 服務合約</div>
+      <h2>Google 評論代發服務<br>委託合約書</h2>
+    </div>
+    <div class="doc-header-right">
+      <strong>合約編號</strong><br>
+      <span id="d_no">──</span><br><br>
+      <strong>簽署日期</strong><br>
+      <span id="d_date">──</span>
+    </div>
+  </div>
+
+  <div class="doc-body">
+
+    <!-- 01 甲方資訊 -->
+    <div class="dsec">
+      <div class="dsec-title">01 · 委託方資訊（甲方）</div>
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="ilabel">LINE 名稱 <span class="req">*</span></span>
+          <input type="text" id="f_line" placeholder="請輸入 LINE 顯示名稱" oninput="updateLinePreview()">
+        </div>
+        <div class="info-row">
+          <span class="ilabel">聯絡電話 <span class="req">*</span></span>
+          <input type="tel" id="f_phone" placeholder="0912-345-678">
+        </div>
+        <div class="info-row">
+          <span class="ilabel">Google 商家名稱 <span class="req">*</span></span>
+          <input type="text" id="f_biz" placeholder="需與 Google 地圖上完全一致">
+        </div>
+        <div class="info-row">
+          <span class="ilabel">商家地址（選填）</span>
+          <input type="text" id="f_addr" placeholder="商家地址">
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 服務內容 -->
+    <div class="dsec">
+      <div class="dsec-title">02 · 服務內容與收費</div>
+      <table class="svc-table" id="d_svc_table"></table>
+      <div class="warranty-box hidden" id="d_warranty_box">
+        <div class="wico">🛡️</div>
+        <div>
+          <div class="wtitle" id="d_w_title"></div>
+          <p id="d_w_body"></p>
+        </div>
+      </div>
+      <div class="no-warranty-note" id="d_nowarranty_note">
+        ⚠️ 本合約<strong>不含保固</strong>。評論發布後若遭 Google 演算法屏蔽或移除，乙方不提供補發服務。如需補發保固，請另行洽詢保固方案報價。
+      </div>
+    </div>
+
+    <!-- 03 合約條款 -->
+    <div class="dsec">
+      <div class="dsec-title">03 · 合約條款</div>
+      <ul class="clause-list">
+        <li><span class="cnum">1</span><span>乙方（服務方）採「分批操作」方式完成評論發布，以降低 Google 演算法異常偵測機率，實際完成時程依批次安排而定。</span></li>
+        <li><span class="cnum">2</span><span>每則評論完成後，乙方將提供「實際發布完成之回報紀錄截圖」；評論送出後確認當下已成功顯示，即視為完成交付。</span></li>
+        <li><span class="cnum">3</span><span>結算金額以乙方回傳之「已實際發布且當下未遭屏蔽之評論數量」為準；甲方應於收到回報後 24 小時內提出異議，逾期視為確認同意。</span></li>
+        <li><span class="cnum">4</span><span>甲方須提供正確之 Google 商家名稱或商家連結，若因資訊錯誤致評論發布至錯誤商家，損失由甲方自行承擔，乙方不退款。</span></li>
+        <li><span class="cnum">5</span><span>本合約相關溝通紀錄（LINE 訊息截圖等）均可作為爭議處理之輔助依據。</span></li>
+        <li><span class="cnum">6</span><span>付款方式另行於 LINE 議定，原則上採全額預付方式進行，確認收款後方開始排程作業。</span></li>
+      </ul>
+    </div>
+
+    <!-- 04 風險告知 -->
+    <div class="dsec">
+      <div class="dsec-title">04 · 風險告知與免責聲明</div>
+      <div class="risk-box">
+        <div class="risk-title">⚠️ 重要風險告知事項</div>
+        <ul class="risk-list">
+          <li>Google 官方持續更新評論審核機制與 AI 演算法，評論存在遭「延遲顯示、隱藏、自動移除」之風險，此屬不可控之第三方因素，乙方無法介入或保證。</li>
+          <li>五星評論代發服務本質上模擬用戶行為，甲方理解此類服務存在「<strong>演算法屏蔽掉評風險</strong>」，包含但不限於 Google 演算法判定異常所致之屏蔽或移除。</li>
+          <li>若甲方商家遭競爭對手或消費者大量檢舉，可能導致評論遭 Google 系統主動審查或移除，此情形同屬「<strong>遭客戶或第三方檢舉之屏蔽風險</strong>」，乙方不負賠償責任。</li>
+          <li>Google 平台已建立「<strong>商業檢舉機制</strong>」，第三方（含競爭同業）可主動舉報商家評論，惡意檢舉可直接造成評論上架失敗或遭屏蔽刪除；此屬外部人為干預因素，非乙方可控範疇，<strong>不予退費</strong>。</li>
+          <li>乙方為降低演算法異常偵測風險，將依操作安全原則「<strong>控制每日上架則數</strong>」，不執行單日大量集中發布；甲方應理解此為保護評論存活率之必要措施，不構成服務延誤之違約。</li>
+          <li id="d_clause_warranty_risk"></li>
+          <li><strong>乙方服務範圍僅限評論內容撰寫與發布操作本身</strong>；評論發布後因 Google 系統任何原因（演算法、帳號審核、政策異動、惡意檢舉等）所致之屏蔽、隱藏、刪除，均屬不可抗力之第三方因素，乙方不承擔任何形式之責任與退費義務。</li>
+          <li>甲方簽署本合約，即表示已完整閱讀並理解上述所有風險，自願承擔相關責任，不得事後以不知情為由要求退款或損害賠償。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 05 同意聲明 -->
+    <div class="dsec">
+      <div class="dsec-title">05 · 甲方同意聲明</div>
+      <div class="agree-wrap">
+        <div class="auto-check-note">✅ 下列聲明已由系統確認，甲方簽名即代表全數同意</div>
+
+        <label class="agree-item">
+          <input type="checkbox" checked disabled>
+          <span class="chk-icon">✓</span>
+          <span>本人已詳細閱讀並完全理解本合約所有條款，包含服務內容、收費方式及結算依據。</span>
+        </label>
+
+        <label class="agree-item">
+          <input type="checkbox" checked disabled>
+          <span class="chk-icon">✓</span>
+          <span>本人充分知悉 Google 評論代發服務存在「<strong>演算法屏蔽風險</strong>」，評論發布後可能遭 Google 系統延遲、隱藏或移除；此屬不可控之第三方因素，乙方不負任何賠償責任。</span>
+        </label>
+
+        <label class="agree-item">
+          <input type="checkbox" checked disabled>
+          <span class="chk-icon">✓</span>
+          <span>本人充分知悉服務存在「<strong>遭客戶或第三方檢舉致屏蔽之風險</strong>」，包含競爭對手惡意檢舉、消費者舉報等情形，均可能導致評論屏蔽或移除；乙方對此不承擔賠償責任。</span>
+        </label>
+
+        <label class="agree-item">
+          <input type="checkbox" checked disabled>
+          <span class="chk-icon">✓</span>
+          <span>本人知悉 Google 已新增「<strong>商業檢舉機制</strong>」，任何第三方（含競爭同業）可主動向 Google 舉報評論，此類惡意檢舉可能直接導致評論無法上架或遭屏蔽刪除；乙方對此不可控因素不予退費，亦不承擔任何責任。</span>
+        </label>
+
+        <label class="agree-item">
+          <input type="checkbox" checked disabled>
+          <span class="chk-icon">✓</span>
+          <span>本人理解為降低 Google 系統偵測風險，乙方將依實際操作情況控制「<strong>每日評論上架則數</strong>」，甲方不得要求單日內大量集中上評；進度安排以乙方排程為準。</span>
+        </label>
+
+        <label class="agree-item">
+          <input type="checkbox" checked disabled>
+          <span class="chk-icon">✓</span>
+          <span>本人明確理解：<strong>乙方之服務範圍僅限於評論內容之撰寫與發布操作</strong>；評論發布後若遭 Google 系統因任何原因（演算法屏蔽、帳號審查、檢舉過濾、政策更新等不可控因素）導致屏蔽、隱藏或刪除，概不在乙方服務責任範圍內，<strong>乙方不予退費</strong>。</span>
+        </label>
+
+        <label class="agree-item">
+          <input type="checkbox" checked disabled>
+          <span class="chk-icon">✓</span>
+          <span id="d_agree_warranty_txt"></span>
+        </label>
+
+        <label class="agree-item">
+          <input type="checkbox" checked disabled>
+          <span class="chk-icon">✓</span>
+          <span>本人同意以「<strong>實際回傳之已發布數量</strong>」作為最終付款依據，下單即表示已完整理解並自願承擔上述一切相關風險，不得要求無條件退款，亦不得以任何理由對乙方提出索賠。</span>
+        </label>
+
+      </div>
+    </div>
+
+    <!-- 06 備註（選填） -->
+    <div class="dsec" id="d_note_sec" style="display:none;">
+      <div class="dsec-title">06 · 備註</div>
+      <div id="d_note_body" style="background:#f9f9f9; border:1px solid var(--gray2); border-radius:5px; padding:13px 16px; font-size:14.5px; line-height:1.8; color:#444;"></div>
+    </div>
+
+    <!-- 07 簽署 -->
+    <div class="dsec">
+      <div class="dsec-title" id="d_sig_label">06 · 委託方簽署</div>
+
+      <!-- 上排：LINE確認 + 日期 -->
+      <div class="sig-area" style="margin-bottom:16px;">
+        <div class="sig-block">
+          <span class="slabel">委託方 LINE 名稱確認</span>
+          <div class="line-preview" id="d_line_preview">──</div>
+        </div>
+        <div class="sig-block">
+          <div class="date-field" style="margin-top:0;">
+            <span class="dlabel">甲方簽署日期 <span class="req">*</span></span>
+            <input type="date" id="f_sig_date">
+          </div>
+          <div class="sig-footnote" style="margin-top:8px;">
+            ※ 簽名即代表甲方確認已閱讀並同意本合約所有條款，具法律效力。<br>
+            ※ 完成兩處簽名後，請截圖或儲存 PDF 回傳給服務方留存。
+          </div>
+        </div>
+      </div>
+
+      <!-- 下排：雙簽名格並排 -->
+      <div class="sig-double">
+        <div class="sig-block">
+          <span class="slabel">甲方簽名（第一次）<span class="req">*</span></span>
+          <div class="sig-canvas-wrap" id="canvasWrap1" onclick="openSigModal(1)">
+            <canvas id="sigCanvas1"></canvas>
+            <div class="sig-hint">請在此以手指簽名</div>
+            <div class="sig-open-hint">
+              <span class="soh-icon">✍️</span>
+              <span class="soh-text">點此開啟簽名板</span>
+            </div>
+          </div>
+          <button class="sig-clear" onclick="clearSigPad(1)">✕ 清除重簽</button>
+        </div>
+        <div class="sig-block">
+          <span class="slabel">甲方簽名（確認簽）<span class="req">*</span></span>
+          <div class="sig-canvas-wrap" id="canvasWrap2" onclick="openSigModal(2)">
+            <canvas id="sigCanvas2"></canvas>
+            <div class="sig-hint">請再次以手指簽名確認</div>
+            <div class="sig-open-hint">
+              <span class="soh-icon">✍️</span>
+              <span class="soh-text">點此開啟簽名板</span>
+            </div>
+          </div>
+          <button class="sig-clear" onclick="clearSigPad(2)">✕ 清除重簽</button>
+        </div>
+      </div>
+
+      <!-- 客戶專用：完成簽名後產生 PDF 並分享（可直接傳 LINE） -->
+      <button class="client-save-btn" id="btnSaveImage" onclick="saveAndShare()">
+        📄 完成簽名，產生 PDF 並分享到 LINE
+      </button>
+      <div class="mobile-pdf-hint">
+        📄 <strong>產生 PDF 並分享：</strong><br>
+        &nbsp;・按下按鈕後會產生合約 PDF，接著手機會跳出「分享」選單<br>
+        &nbsp;・在分享選單中點選 <strong>LINE</strong> 圖示即可直接傳送給對方<br>
+        &nbsp;・也可以在分享選單選「儲存至檔案 / 下載」把 PDF 存到手機裡
+      </div>
+      <div class="mobile-pdf-hint" id="shareFallbackHint" style="display:none;">
+        📄 <strong>此瀏覽器不支援直接分享：</strong><br>
+        &nbsp;・PDF 已自動下載，請到手機的「檔案」App 或下載記錄中找到它<br>
+        &nbsp;・打開 PDF 後，點分享圖示，選擇 LINE 傳送即可
+      </div>
+
+      <div class="provider-line">
+        <div class="pline">乙方（服務方）確認：<div class="pline-val"></div></div>
+        <div class="pline">乙方簽署日期：<div class="pline-val"></div></div>
+      </div>
+    </div>
+
+  </div><!-- /doc-body -->
+
+  <div class="doc-footer">
+    <strong>Google 評論代發服務委託合約書</strong>
+    <span>合約編號：<span id="d_no2">──</span></span>
+  </div>
+
+</div><!-- /contract-doc -->
+</div><!-- /contract-area -->
+</div><!-- /app -->
+
+<!-- 手機遮罩 -->
+<div class="mobile-panel-overlay" id="mobilePanelOverlay" onclick="closeMobilePanel()"></div>
+<!-- 手機浮動設定按鈕 -->
+<button class="mobile-panel-btn" id="mobilePanelBtn" onclick="toggleMobilePanel()" title="合約設定">⚙️</button>
+
+<!-- ═══════════ SIGNATURE MODAL ═══════════ -->
+<div class="sig-modal-overlay" id="sigModal" onclick="handleModalOverlayClick(event)">
+  <div class="sig-modal">
+    <div class="sig-modal-header">
+      <div>
+        <h3 id="sigModalTitle">✍️ 手寫簽名</h3>
+        <p>請用手指在下方空白區域簽名</p>
+      </div>
+      <button class="sig-modal-close" onclick="closeSigModal()">✕</button>
+    </div>
+    <div class="sig-modal-canvas-wrap" id="sigModalWrap">
+      <canvas id="sigModalCanvas"></canvas>
+      <div class="sig-modal-hint" id="sigModalHint">
+        <span class="hint-icon">✍️</span>
+        用手指在此處簽名
+      </div>
+    </div>
+    <div class="sig-modal-actions">
+      <button class="sig-modal-clear" onclick="clearModalCanvas()">✕ 清除重簽</button>
+      <button class="sig-modal-confirm" onclick="confirmSigModal()">✅ 完成簽名</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── INIT ── */
+(function init() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const no = `GR-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${Math.floor(Math.random()*9000+1000)}`;
+  document.getElementById('d_no').textContent = no;
+  document.getElementById('d_no2').textContent = no;
+
+  const today = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('s_date').value = today;
+  document.getElementById('f_sig_date').value = today;
+
+  updateAll();
+
+  document.querySelectorAll('.panel-body input, .panel-body textarea').forEach(el => {
+    el.addEventListener('input', updateAll);
+    el.addEventListener('change', updateAll);
+  });
+
+  // 預設收合設定面板（桌面版），手機版本來就預設隱藏，不受影響
+  if (window.innerWidth > 640) {
+    const panel = document.getElementById('settingsPanel');
+    const btn   = document.getElementById('panelCollapseBtn');
+    panel.classList.add('collapsed');
+    btn.textContent = '▶';
+    btn.title = '展開設定';
+  }
+})();
+
+/* ── WARRANTY TOGGLE ── */
+function toggleWarranty() {
+  const on = document.getElementById('s_warranty').checked;
+  document.getElementById('warranty_sub').classList.toggle('hidden', !on);
+  updateAll();
+}
+
+/* ── LINE PREVIEW ── */
+function updateLinePreview() {
+  const v = document.getElementById('f_line').value.trim();
+  document.getElementById('d_line_preview').textContent = v || '──';
+}
+
+/* ── DATE FORMAT ── */
+function fmtDate(val) {
+  if (!val) return '──';
+  const [y, m, d] = val.split('-');
+  return `${y} 年 ${parseInt(m)} 月 ${parseInt(d)} 日`;
+}
+
+/* ── UPDATE ALL ── */
+function updateAll() {
+  const qty      = parseInt(document.getElementById('s_qty').value)      || 20;
+  const price    = parseInt(document.getElementById('s_price').value)    || 85;
+  const photoFee = parseInt(document.getElementById('s_photo').value)    || 0;
+  const textFee  = parseInt(document.getElementById('s_text_fee').value) || 0;
+  const unitPriceBasic = price + photoFee + textFee;
+  const grandTotal     = unitPriceBasic * qty;
+  const warranty = document.getElementById('s_warranty').checked;
+  const wPrice   = parseInt(document.getElementById('s_wprice').value)   || 300;
+  const wDays    = parseInt(document.getElementById('s_wdays').value)    || 15;
+  const wQty     = parseInt(document.getElementById('s_wqty').value)     || 1;
+  const dateVal  = document.getElementById('s_date').value;
+  const note     = document.getElementById('s_note').value.trim();
+
+  // date header
+  document.getElementById('d_date').textContent = fmtDate(dateVal);
+
+  // service table
+  let t = `<thead><tr>
+    <th style="width:34%">項目</th>
+    <th style="width:21%">單價</th>
+    <th>說明</th>
+  </tr></thead><tbody>`;
+
+  if (warranty) {
+    t += `
+    <tr>
+      <td>Google 五星評論代發<br><small style="color:#888">（基本方案，無保固）</small></td>
+      <td><span class="price-val">${price} 元／則</span></td>
+      <td>真實手動帳號操作，模擬真實用戶行為，分批上線。<span style="color:#b52b2b;font-weight:700;">本方案不含補發保固。</span></td>
+    </tr>
+    <tr>
+      <td>Google 五星評論代發<br><small style="color:#888">（含 ${wDays} 天保固方案）</small></td>
+      <td><span class="price-val">${wPrice} 元／則</span></td>
+      <td>含 ${wDays} 天補評保固，屏蔽後補上 ${wQty} 則，保障更完整。</td>
+    </tr>`;
+  } else {
+    t += `
+    <tr>
+      <td>Google 五星評論代發</td>
+      <td><span class="price-val">${price} 元／則</span></td>
+      <td>真實手動帳號操作，模擬真實用戶行為，分批上線降低風險。</td>
+    </tr>`;
+  }
+
+  if (photoFee > 0) {
+    t += `
+    <tr>
+      <td>加附照片 <span class="badge">加購</span></td>
+      <td><span class="price-val">+${photoFee} 元／則</span></td>
+      <td>每則評論附加一張照片，提升評論真實感與可信度。</td>
+    </tr>`;
+  }
+  if (textFee > 0) {
+    t += `
+    <tr>
+      <td>指定評論內文 <span class="badge">加購</span></td>
+      <td><span class="price-val">+${textFee} 元／則</span></td>
+      <td>可提供指定文字方向，由操作方撰寫自然語句內容。</td>
+    </tr>`;
+  }
+  t += `<tr style="background:#eef4ff;">
+    <td style="font-weight:700;color:var(--navy);border-top:2px solid #b0caee;">📋 本次委託小計</td>
+    <td style="font-weight:700;color:var(--navy);border-top:2px solid #b0caee;font-size:15px;">${qty}&nbsp;則</td>
+    <td style="font-weight:700;color:var(--navy);border-top:2px solid #b0caee;font-size:15px;">應付總金額：NT$&nbsp;${grandTotal.toLocaleString()}</td>
+  </tr>`;
+  t += '</tbody>';
+  document.getElementById('d_svc_table').innerHTML = t;
+
+  // warranty / no-warranty
+  const wb  = document.getElementById('d_warranty_box');
+  const nwn = document.getElementById('d_nowarranty_note');
+  if (warranty) {
+    wb.classList.remove('hidden');
+    nwn.classList.add('hidden');
+    document.getElementById('d_w_title').textContent = `🛡 ${wDays} 天補評保固說明（含保固方案適用）`;
+    document.getElementById('d_w_body').innerHTML =
+      `評論成功發布後，保固期間為 <strong>${wDays} 個自然日</strong>。於保固期內，若評論遭 Google 系統屏蔽或移除（以發布當下已成功顯示為前提），乙方將無償補上 <strong>${wQty} 則</strong>一次。<br><br>` +
+      `保固範圍僅限發布後 ${wDays} 天內之首次屏蔽補償；保固期滿後，或補評後再次遭屏蔽，均不在保固範圍內。`;
+  } else {
+    wb.classList.add('hidden');
+    nwn.classList.remove('hidden');
+  }
+
+  // risk clause 4
+  const rc4 = document.getElementById('d_clause_warranty_risk');
+  rc4.innerHTML = warranty
+    ? `保固補發僅限一次，且僅適用於發布後 ${wDays} 天內；保固期滿後遭屏蔽屬不可控範圍，乙方不承擔進一步補發義務，亦不退款。`
+    : `本合約<strong>不含補發保固</strong>，評論發布後若遭 Google 系統移除或屏蔽，乙方不提供任何補發服務，甲方應於下單前充分評估此風險。`;
+
+  // agree item 4
+  const agw = document.getElementById('d_agree_warranty_txt');
+  agw.innerHTML = warranty
+    ? `本人了解保固補發僅限 ${wDays} 天內一次；保固期滿後再遭屏蔽屬不可控因素，乙方不承擔額外補發或退款義務。`
+    : `本人確認此方案<strong>不含保固補發</strong>，評論遭屏蔽後不得要求補發，已充分理解並接受此條件。`;
+
+  // note section & sig label numbering
+  const noteSec = document.getElementById('d_note_sec');
+  if (note) {
+    noteSec.style.display = '';
+    document.getElementById('d_note_body').textContent = note;
+    document.getElementById('d_sig_label').textContent = '07 · 委託方簽署';
+  } else {
+    noteSec.style.display = 'none';
+    document.getElementById('d_sig_label').textContent = '06 · 委託方簽署';
+  }
+}
+
+/* ── RESET ── */
+function resetSettings() {
+  document.getElementById('s_qty').value      = 20;
+  document.getElementById('s_price').value    = 85;
+  document.getElementById('s_photo').value    = 15;
+  document.getElementById('s_text_fee').value = 10;
+  document.getElementById('s_warranty').checked = false;
+  document.getElementById('s_wprice').value   = 300;
+  document.getElementById('s_wdays').value    = 15;
+  document.getElementById('s_wqty').value     = 1;
+  document.getElementById('s_note').value     = '';
+  document.getElementById('warranty_sub').classList.add('hidden');
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('s_date').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  updateAll();
+}
+
+/* ── SIGNATURE PADS（縮圖顯示用，不可直接繪製） ── */
+const pads = {};
+
+function initPad(n) {
+  const canvas = document.getElementById(`sigCanvas${n}`);
+  const wrap   = document.getElementById(`canvasWrap${n}`);
+  const ctx    = canvas.getContext('2d');
+  const pad    = { canvas, wrap, ctx, hasSig: false };
+  pads[n] = pad;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = wrap.offsetWidth, h = wrap.offsetHeight;
+    // preserve existing signature image before resize
+    let imgData = null;
+    if (pad.hasSig && canvas.width > 0 && canvas.height > 0) {
+      imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+    canvas.width  = w * dpr; canvas.height = h * dpr;
+    canvas.style.width  = w + 'px'; canvas.style.height = h + 'px';
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.scale(dpr, dpr);
+    if (imgData) ctx.putImageData(imgData, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  pad._resize = resize;
+}
+
+initPad(1);
+initPad(2);
+
+function clearSigPad(n) {
+  const pad = pads[n];
+  const dpr = window.devicePixelRatio || 1;
+  pad.ctx.clearRect(0, 0, pad.wrap.offsetWidth * dpr, pad.wrap.offsetHeight * dpr);
+  pad.hasSig = false;
+  pad.wrap.classList.remove('has-sig');
+}
+
+/* ── SIGNATURE MODAL ── */
+let _modalTargetPad = null;
+const _modal = {
+  canvas: null,
+  ctx: null,
+  wrap: null,
+  hint: null,
+  drawing: false,
+  hasSig: false,
+  lastX: 0, lastY: 0
+};
+
+function _initModalCanvas() {
+  const canvas = document.getElementById('sigModalCanvas');
+  const wrap   = document.getElementById('sigModalWrap');
+  const hint   = document.getElementById('sigModalHint');
+  _modal.canvas = canvas;
+  _modal.wrap   = wrap;
+  _modal.hint   = hint;
+
+  function setupCtx() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = wrap.offsetWidth, h = wrap.offsetHeight;
+    canvas.width  = w * dpr; canvas.height = h * dpr;
+    canvas.style.width  = w + 'px'; canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = '#152540';
+    ctx.lineWidth   = 3.2;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    _modal.ctx = ctx;
+  }
+  setupCtx();
+  _modal._setup = setupCtx;
+
+  function getPos(e) {
+    const r = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+  }
+  function startDraw(e) {
+    _modal.drawing = true;
+    const p = getPos(e); _modal.lastX = p.x; _modal.lastY = p.y;
+    e.preventDefault();
+  }
+  function moveDraw(e) {
+    if (!_modal.drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    _modal.ctx.beginPath();
+    _modal.ctx.moveTo(_modal.lastX, _modal.lastY);
+    _modal.ctx.lineTo(p.x, p.y);
+    _modal.ctx.stroke();
+    _modal.lastX = p.x; _modal.lastY = p.y;
+    _modal.hasSig = true;
+    hint.style.display = 'none';
+  }
+  function endDraw(e) { _modal.drawing = false; }
+
+  canvas.addEventListener('mousedown',  startDraw);
+  canvas.addEventListener('mousemove',  moveDraw);
+  canvas.addEventListener('mouseup',    endDraw);
+  canvas.addEventListener('mouseleave', endDraw);
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove',  moveDraw,  { passive: false });
+  canvas.addEventListener('touchend',   endDraw);
+}
+
+function openSigModal(n) {
+  _modalTargetPad = n;
+  const titles = { 1: '✍️ 甲方簽名（第一次）', 2: '✍️ 甲方簽名（確認簽）' };
+  document.getElementById('sigModalTitle').textContent = titles[n] || '✍️ 手寫簽名';
+
+  const overlay = document.getElementById('sigModal');
+  overlay.classList.add('open');
+  // prevent body scroll on mobile
+  document.body.style.overflow = 'hidden';
+
+  // reset canvas
+  if (!_modal.canvas) { _initModalCanvas(); }
+  else { _modal._setup(); }
+  _modal.hasSig = false;
+  _modal.hint.style.display = '';
+}
+
+function closeSigModal() {
+  document.getElementById('sigModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleModalOverlayClick(e) {
+  // close when clicking backdrop (not the modal box itself)
+  if (e.target === document.getElementById('sigModal')) closeSigModal();
+}
+
+function clearModalCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  _modal.ctx.clearRect(0, 0, _modal.wrap.offsetWidth * dpr, _modal.wrap.offsetHeight * dpr);
+  _modal.hasSig = false;
+  _modal.hint.style.display = '';
+}
+
+function confirmSigModal() {
+  if (!_modal.hasSig) {
+    alert('尚未簽名，請先在上方空白區域簽名後再按完成。');
+    return;
+  }
+  const n = _modalTargetPad;
+  const pad = pads[n];
+
+  // transfer modal canvas content → contract canvas (scale to fit)
+  const dpr = window.devicePixelRatio || 1;
+  const tw = pad.wrap.offsetWidth, th = pad.wrap.offsetHeight;
+  pad.canvas.width  = tw * dpr; pad.canvas.height = th * dpr;
+  pad.canvas.style.width  = tw + 'px'; pad.canvas.style.height = th + 'px';
+  pad.ctx.setTransform(1,0,0,1,0,0);
+  pad.ctx.scale(dpr, dpr);
+
+  // draw the modal canvas content scaled into the target canvas
+  pad.ctx.clearRect(0, 0, tw, th);
+  pad.ctx.drawImage(_modal.canvas, 0, 0, tw, th);
+
+  pad.hasSig = true;
+  pad.wrap.classList.add('has-sig');
+
+  closeSigModal();
+}
+
+/* ── 動態計算合約真實高度並注入 @page size ── */
+function prepareSinglePagePrint() {
+  const doc = document.getElementById('contractDoc');
+  // 1px = 0.2645835mm；加 16mm 含上下 margin（各 8mm）
+  const heightPx  = doc.scrollHeight;
+  const heightMm  = Math.ceil(heightPx * 0.2645835) + 16;
+  document.getElementById('dynamic-page-style').textContent =
+    `@media print { @page { size: 210mm ${heightMm}mm; margin: 8mm; } }`;
+}
+
+function restoreSinglePagePrint() {
+  document.getElementById('dynamic-page-style').textContent = '';
+}
+
+window.addEventListener('beforeprint', prepareSinglePagePrint);
+window.addEventListener('afterprint',  restoreSinglePagePrint);
+
+/* ── 客戶存PDF（不驗證面板欄位，只驗簽名） ── */
+function clientSavePDF() {
+  if (!pads[1].hasSig) { alert('請先完成第一處簽名。'); return; }
+  if (!pads[2].hasSig) { alert('請再完成確認簽名（第二格）。'); return; }
+  window.print();
+}
+
+/* ── 產生客戶版 PDF（空白簽名） ── */
+function generateClientPDF() {
+  const biz = document.getElementById('f_biz').value.trim();
+  if (!biz) {
+    alert('請先在合約右側填寫「Google 商家名稱」後再產生 PDF。');
+    return;
+  }
+
+  // 清空簽名格，確保是空白的
+  clearSigPad(1);
+  clearSigPad(2);
+  document.getElementById('canvasWrap1').classList.remove('has-sig');
+  document.getElementById('canvasWrap2').classList.remove('has-sig');
+
+  // 更新提示文字為客戶版說明
+  const hints = [
+    { el: document.querySelector('#canvasWrap1 .sig-hint'), newText: '▼ 客戶請在此手寫簽名' },
+    { el: document.querySelector('#canvasWrap2 .sig-hint'), newText: '▼ 請再次簽名確認' },
+  ];
+  hints.forEach(h => {
+    h.origText = h.el.textContent;
+    h.el.textContent = h.newText;
+    h.el.style.display = 'block';
+  });
+
+  document.body.classList.add('client-pdf-mode');
+
+  function cleanup() {
+    document.body.classList.remove('client-pdf-mode');
+    hints.forEach(h => {
+      h.el.textContent = h.origText;
+      h.el.style.display = 'none';
+    });
+    window.removeEventListener('afterprint', cleanup);
+  }
+  window.addEventListener('afterprint', cleanup);
+
+  window.print();
+}
+
+/* ── 產生合約 PDF 並用手機原生分享選單分享（含 LINE） ── */
+async function saveAndShare() {
+  if (!pads[1].hasSig) { alert('請先完成第一處簽名。'); return; }
+  if (!pads[2].hasSig) { alert('請再完成確認簽名（第二格）。'); return; }
+
+  const btn = document.getElementById('btnSaveImage');
+  const origText = btn.textContent;
+  btn.textContent = '⏳ 產生 PDF 中…';
+  btn.disabled = true;
+
+  // 暫時隱藏不需要入鏡的元素
+  const hideEls = document.querySelectorAll(
+    '.client-save-btn, .sig-clear, .mobile-pdf-hint, .sig-open-hint, .mobile-panel-btn'
+  );
+  hideEls.forEach(el => { el._origVis = el.style.visibility; el.style.visibility = 'hidden'; });
+
+  try {
+    const doc = document.getElementById('contractDoc');
+    const canvas = await html2canvas(doc, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    hideEls.forEach(el => { el.style.visibility = el._origVis || ''; });
+
+    const filename = 'Google評論合約_' + new Date().toISOString().slice(0, 10) + '.pdf';
+    const imgData  = canvas.toDataURL('image/jpeg', 0.93);
+
+    // 用 jsPDF 依合約實際比例產生單頁 PDF（不裁切、不分頁）
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [canvas.width, canvas.height],
+    });
+    pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+    const pdfBlob = pdf.output('blob');
+    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+    // 優先使用手機原生分享選單（分享清單裡會有 LINE）
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Google 評論代發服務委託合約書',
+          text: '合約 PDF',
+        });
+      } catch (shareErr) {
+        // 使用者自己取消分享，不用顯示錯誤
+        if (shareErr.name !== 'AbortError') {
+          fallbackDownloadPDF(pdfBlob, filename);
+        }
+      }
+    } else {
+      fallbackDownloadPDF(pdfBlob, filename);
+    }
+  } catch (err) {
+    hideEls.forEach(el => { el.style.visibility = el._origVis || ''; });
+    alert('PDF 產生失敗（' + err.message + '），請重新整理頁面後再試一次。');
+  }
+
+  btn.textContent = origText;
+  btn.disabled = false;
+}
+
+function fallbackDownloadPDF(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  document.getElementById('shareFallbackHint').style.display = 'block';
+}
+
+/* ── 桌面：收合 / 展開設定面板 ── */
+function togglePanel() {
+  const panel = document.getElementById('settingsPanel');
+  const btn   = document.getElementById('panelCollapseBtn');
+  const collapsed = panel.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '▶' : '◀';
+  btn.title       = collapsed ? '展開設定' : '收合設定';
+}
+
+/* ── 手機：開 / 關設定面板 ── */
+function toggleMobilePanel() {
+  const panel   = document.getElementById('settingsPanel');
+  const overlay = document.getElementById('mobilePanelOverlay');
+  const isOpen  = panel.classList.toggle('mobile-open');
+  overlay.classList.toggle('visible', isOpen);
+  // 防止底層頁面滾動
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+function closeMobilePanel() {
+  const panel   = document.getElementById('settingsPanel');
+  const overlay = document.getElementById('mobilePanelOverlay');
+  panel.classList.remove('mobile-open');
+  overlay.classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+/* ── 我方（設定面板）列印驗證 ── */
+function validateAndPrint() {
+  const required = [
+    [document.getElementById('f_line').value.trim(),  'LINE 名稱'],
+    [document.getElementById('f_phone').value.trim(), '聯絡電話'],
+    [document.getElementById('f_biz').value.trim(),   'Google 商家名稱'],
+  ];
+  for (const [v, label] of required) {
+    if (!v) { alert(`請先填寫甲方的「${label}」再列印。`); return; }
+  }
+  if (!pads[1].hasSig || !pads[2].hasSig) {
+    alert('請確認兩格簽名都已完成後再列印。'); return;
+  }
+  window.print();
+}
+</script>
+</body>
+</html>
