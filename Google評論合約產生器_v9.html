@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+// 強制避開手機內建瀏覽器（LINE／FB 等 App 內嵌瀏覽器）的頑固快取，
+// 確保每次打開都抓到最新版本，不用手動清快取。
+(function () {
+  if (!location.search.includes('_v=')) {
+    location.replace(location.pathname + '?_v=' + Date.now());
+  }
+})();
+</script>
 <title>Google 評論合約產生器</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1019,6 +1031,7 @@ html, body {
 </style>
 <style id="dynamic-page-style"></style>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.11/dist/html2canvas-pro.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -1307,14 +1320,20 @@ html, body {
         </div>
       </div>
 
-      <!-- 客戶專用：完成簽名後儲存合約圖片按鈕 -->
-      <button class="client-save-btn" id="btnSaveImage" onclick="saveAsImage()">
-        📸 完成簽名，儲存合約到手機相簿
+      <!-- 客戶專用：完成簽名後產生 PDF 並分享（可直接傳 LINE） -->
+      <button class="client-save-btn" id="btnSaveImage" onclick="saveAndShare()">
+        📄 完成簽名，產生 PDF 並分享到 LINE
       </button>
       <div class="mobile-pdf-hint">
-        📸 <strong>儲存合約圖片到相簿：</strong><br>
-        &nbsp;・<strong>iOS：</strong>點按鈕後開新頁面，長按圖片 → 選「儲存到照片」即入相簿<br>
-        &nbsp;・<strong>Android：</strong>自動下載 JPG，直接進相簿（或下載資料夾）
+        📄 <strong>產生 PDF 並分享：</strong><br>
+        &nbsp;・按下按鈕後會產生合約 PDF，接著手機會跳出「分享」選單<br>
+        &nbsp;・在分享選單中點選 <strong>LINE</strong> 圖示即可直接傳送給對方<br>
+        &nbsp;・也可以在分享選單選「儲存至檔案 / 下載」把 PDF 存到手機裡
+      </div>
+      <div class="mobile-pdf-hint" id="shareFallbackHint" style="display:none;">
+        📄 <strong>此瀏覽器不支援直接分享：</strong><br>
+        &nbsp;・PDF 已自動下載，請到手機的「檔案」App 或下載記錄中找到它<br>
+        &nbsp;・打開 PDF 後，點分享圖示，選擇 LINE 傳送即可
       </div>
 
       <div class="provider-line">
@@ -1774,14 +1793,14 @@ function generateClientPDF() {
   window.print();
 }
 
-/* ── 儲存合約圖片到手機相簿 ── */
-async function saveAsImage() {
+/* ── 產生合約 PDF 並用手機原生分享選單分享（含 LINE） ── */
+async function saveAndShare() {
   if (!pads[1].hasSig) { alert('請先完成第一處簽名。'); return; }
   if (!pads[2].hasSig) { alert('請再完成確認簽名（第二格）。'); return; }
 
   const btn = document.getElementById('btnSaveImage');
   const origText = btn.textContent;
-  btn.textContent = '⏳ 產生圖片中…';
+  btn.textContent = '⏳ 產生 PDF 中…';
   btn.disabled = true;
 
   // 暫時隱藏不需要入鏡的元素
@@ -1802,48 +1821,52 @@ async function saveAsImage() {
 
     hideEls.forEach(el => { el.style.visibility = el._origVis || ''; });
 
-    const filename = 'Google評論合約_' + new Date().toISOString().slice(0, 10) + '.jpg';
-    const dataURL  = canvas.toDataURL('image/jpeg', 0.93);
-    const isIOS    = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const filename = 'Google評論合約_' + new Date().toISOString().slice(0, 10) + '.pdf';
+    const imgData  = canvas.toDataURL('image/jpeg', 0.93);
 
-    if (isIOS) {
-      // iOS：新視窗顯示圖片，讓使用者長按「儲存到照片」
-      canvas.toBlob(blob => {
-        const blobURL = URL.createObjectURL(blob);
-        const win = window.open('', '_blank');
-        if (win) {
-          win.document.write(
-            '<html><head><meta name="viewport" content="width=device-width,initial-scale=1">' +
-            '<title>合約圖片 — 長按儲存</title>' +
-            '<style>body{margin:0;padding:14px;background:#1a1a2e;display:flex;flex-direction:column;' +
-            'align-items:center;gap:14px;}p{color:#fff;font-family:sans-serif;font-size:15px;' +
-            'text-align:center;margin:0;line-height:1.8;background:#2a2a4e;border-radius:10px;' +
-            'padding:12px 16px;width:100%;box-sizing:border-box;}' +
-            'img{max-width:100%;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.6);}</style></head>' +
-            '<body><p>📱 長按下方圖片<br>選「<strong>儲存到照片</strong>」即可存入相簿</p>' +
-            '<img src="' + blobURL + '" alt="合約圖片"></body></html>'
-          );
-          win.document.close();
-        } else {
-          // Popup 被擋：改成 download
-          const a = document.createElement('a');
-          a.href = dataURL; a.download = filename;
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    // 用 jsPDF 依合約實際比例產生單頁 PDF（不裁切、不分頁）
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [canvas.width, canvas.height],
+    });
+    pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+    const pdfBlob = pdf.output('blob');
+    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+    // 優先使用手機原生分享選單（分享清單裡會有 LINE）
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Google 評論代發服務委託合約書',
+          text: '合約 PDF',
+        });
+      } catch (shareErr) {
+        // 使用者自己取消分享，不用顯示錯誤
+        if (shareErr.name !== 'AbortError') {
+          fallbackDownloadPDF(pdfBlob, filename);
         }
-      }, 'image/jpeg', 0.93);
+      }
     } else {
-      // Android / 桌面：直接觸發下載（Android 會存到下載/相簿）
-      const a = document.createElement('a');
-      a.href = dataURL; a.download = filename;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      fallbackDownloadPDF(pdfBlob, filename);
     }
   } catch (err) {
     hideEls.forEach(el => { el.style.visibility = el._origVis || ''; });
-    alert('圖片產生失敗（' + err.message + '），請重新整理頁面後再試一次。');
+    alert('PDF 產生失敗（' + err.message + '），請重新整理頁面後再試一次。');
   }
 
   btn.textContent = origText;
   btn.disabled = false;
+}
+
+function fallbackDownloadPDF(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  document.getElementById('shareFallbackHint').style.display = 'block';
 }
 
 /* ── 桌面：收合 / 展開設定面板 ── */
