@@ -1018,7 +1018,7 @@ html, body {
 }
 </style>
 <style id="dynamic-page-style"></style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.11/dist/html2canvas-pro.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -1839,7 +1839,7 @@ async function saveAsImage() {
     }
   } catch (err) {
     hideEls.forEach(el => { el.style.visibility = el._origVis || ''; });
-    alert('圖片產生失敗（' + err.message + '），請改用「列印 / 存 PDF」按鈕。');
+    alert('圖片產生失敗（' + err.message + '），請重新整理頁面後再試一次。');
   }
 
   btn.textContent = origText;
