@@ -1,0 +1,830 @@
+/* ============================================================
+   順吉 SHUNJI — 樣式
+   設計語彙：藍染暖簾（入口）＋ 食券（訂單）
+   ============================================================ */
+
+/* ---------- Tokens ---------- */
+:root{
+  --ink:      #141922;
+  --ink-2:    #4B566A;
+  --ink-3:    #838EA0;
+
+  --kon:      #1B2C51;   /* 紺 — 暖簾、主要按鈕 */
+  --kon-deep: #111C33;
+  --indigo:   #3A5FA0;
+
+  --paper:    #EDF1F6;   /* 冷調紙白 */
+  --card:     #FFFFFF;
+  --rule:     #D6DEE9;
+  --rule-2:   #E7ECF3;
+
+  --yamabuki: #D99A1E;   /* 山吹 — 價格、印章 */
+  --yamabuki-soft:#FBF1DC;
+
+  --line:     #06C755;   /* 只給 LINE 用 */
+  --line-dark:#05A948;
+
+  --danger:   #C2413A;
+
+  --r-s: 8px;
+  --r-m: 14px;
+  --r-l: 22px;
+
+  --sh-1: 0 1px 2px rgba(17,28,51,.05), 0 3px 10px rgba(17,28,51,.06);
+  --sh-2: 0 10px 40px rgba(17,28,51,.18);
+
+  --f-display: "Noto Serif TC", "Songti TC", "Source Han Serif TC", serif;
+  --f-body:    system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --f-mono:    "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --wrap: 640px;
+  --bar:  76px;   /* 底部結帳列高度 */
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+
+html{ -webkit-text-size-adjust:100%; }
+
+body{
+  margin:0;
+  font-family:var(--f-body);
+  font-size:16px;
+  line-height:1.6;
+  color:var(--ink);
+  background:var(--paper);
+  -webkit-font-smoothing:antialiased;
+}
+body.is-locked{ overflow:hidden; }
+
+img{ max-width:100%; display:block; }
+a{ color:var(--indigo); }
+
+:focus-visible{
+  outline:2px solid var(--indigo);
+  outline-offset:2px;
+  border-radius:4px;
+}
+
+.wrap{ width:100%; max-width:var(--wrap); margin:0 auto; padding:0 20px; }
+
+/* ============================================================
+   暖簾 — 首頁的入口
+   ============================================================ */
+.noren{
+  background:var(--kon);
+  color:#fff;
+  position:relative;
+  animation:norenDrop .75s cubic-bezier(.2,.85,.25,1) both;
+}
+.noren__inner{
+  max-width:var(--wrap);
+  margin:0 auto;
+  padding:34px 20px 30px;
+  text-align:center;
+}
+.noren__eyebrow{
+  font-family:var(--f-mono);
+  font-size:11px;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.55);
+  margin:0 0 14px;
+}
+.noren__name{
+  font-family:var(--f-display);
+  font-weight:700;
+  font-size:clamp(46px,15vw,68px);
+  line-height:1;
+  letter-spacing:.16em;
+  margin:0 0 0 .16em;   /* 補償字距造成的視覺偏移 */
+  animation:rise .8s .1s cubic-bezier(.2,.85,.25,1) both;
+}
+.noren__tag{
+  margin:14px 0 0;
+  font-size:14px;
+  letter-spacing:.16em;
+  color:rgba(255,255,255,.72);
+  animation:rise .8s .2s cubic-bezier(.2,.85,.25,1) both;
+}
+.noren__meta{
+  margin:20px 0 0;
+  font-size:13px;
+  line-height:1.9;
+  color:rgba(255,255,255,.6);
+  animation:rise .8s .3s cubic-bezier(.2,.85,.25,1) both;
+}
+.noren__meta a{ color:rgba(255,255,255,.85); text-underline-offset:3px; }
+
+/* 暖簾下襬的切口 */
+.noren__fringe{
+  height:24px;
+  background-image:repeating-linear-gradient(
+    90deg,
+    var(--kon) 0 calc(12.5% - 5px),
+    transparent calc(12.5% - 5px) 12.5%
+  );
+  transform-origin:top center;
+  animation:sway 2.6s .55s cubic-bezier(.4,0,.2,1) both;
+}
+
+@keyframes norenDrop{ from{ transform:translateY(-16px); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes rise{ from{ transform:translateY(10px); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes sway{
+  0%{ transform:skewX(0deg); }
+  22%{ transform:skewX(1.6deg); }
+  48%{ transform:skewX(-1.1deg); }
+  72%{ transform:skewX(.5deg); }
+  100%{ transform:skewX(0deg); }
+}
+
+/* ============================================================
+   一般頁首（點餐頁 / 訂單頁）
+   ============================================================ */
+.stickytop{ position:sticky; top:0; z-index:40; }
+
+.bar{
+  background:var(--kon);
+  color:#fff;
+}
+.bar__in{
+  max-width:var(--wrap); margin:0 auto;
+  padding:11px 20px;
+  display:flex; align-items:center; gap:12px;
+}
+.bar__back{
+  background:none; border:0; padding:6px; margin-left:-6px;
+  color:rgba(255,255,255,.8); font-size:20px; line-height:1; cursor:pointer;
+}
+.bar__title{
+  font-family:var(--f-display);
+  font-weight:700; font-size:17px; letter-spacing:.1em;
+  margin:0; flex:1;
+}
+
+/* 身分晶片 */
+.chip{
+  display:inline-flex; align-items:center; gap:7px;
+  border:0; cursor:pointer;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  border-radius:999px;
+  padding:4px 11px 4px 4px;
+  font-family:var(--f-body); font-size:13px;
+  max-width:170px;
+}
+.chip--ghost{
+  background:transparent;
+  border:1px dashed rgba(255,255,255,.35);
+  color:rgba(255,255,255,.6);
+  padding:5px 12px;
+  cursor:default;
+}
+.chip__pic{
+  width:24px; height:24px; border-radius:999px; object-fit:cover; flex:none;
+  background:var(--indigo);
+}
+.chip__pic--letter{
+  display:grid; place-items:center;
+  font-size:12px; font-weight:700; color:#fff;
+}
+.chip__name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chip__check{
+  flex:none; width:15px; height:15px; border-radius:999px;
+  background:var(--line); color:#fff;
+  font-size:9px; line-height:15px; text-align:center; font-weight:700;
+}
+
+/* ============================================================
+   區塊 / 標題
+   ============================================================ */
+.sec{ padding:34px 0 6px; }
+.sec__head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.eyebrow{
+  font-family:var(--f-mono);
+  font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--ink-3);
+  margin:0 0 6px;
+}
+.sec__title{
+  font-family:var(--f-display);
+  font-weight:700; font-size:22px; letter-spacing:.06em;
+  margin:0;
+}
+
+/* ============================================================
+   首頁：推薦卡
+   ============================================================ */
+.rail{
+  display:flex; gap:12px;
+  overflow-x:auto;
+  padding:2px 20px 8px;
+  margin:0 -20px;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.rail::-webkit-scrollbar{ display:none; }
+
+.pick{
+  flex:0 0 168px;
+  scroll-snap-align:start;
+  background:var(--card);
+  border-radius:var(--r-m);
+  box-shadow:var(--sh-1);
+  overflow:hidden;
+}
+.pick__name{
+  font-family:var(--f-display);
+  font-weight:700; font-size:15px;
+  margin:12px 12px 2px;
+}
+.pick__price{
+  font-family:var(--f-mono); font-weight:500; font-size:13px;
+  color:var(--yamabuki);
+  margin:0 12px 12px;
+}
+
+/* 餐點字牌 */
+.tile{
+  position:relative;
+  aspect-ratio:4/3;
+  background-size:cover; background-position:center;
+  display:grid; place-items:center;
+  background-color:#DCE4EF;
+}
+.tile__glyph{
+  font-family:var(--f-display);
+  font-weight:700;
+  font-size:34px;
+  color:rgba(27,44,81,.30);
+  letter-spacing:0;
+}
+.tile--don   { background-color:#DDE5F0; }
+.tile--teisho{ background-color:#E3E2EE; }
+.tile--ramen { background-color:#D8E6EA; }
+.tile--side  { background-color:#F2E9D6; }
+.tile--side .tile__glyph{ color:rgba(140,102,26,.34); }
+.tile--drink { background-color:#E1EDF2; }
+.tile--sm{ aspect-ratio:1/1; border-radius:10px; width:64px; }
+.tile--sm .tile__glyph{ font-size:24px; }
+
+/* ============================================================
+   首頁：訂餐流程（真的有順序，所以編號有意義）
+   ============================================================ */
+.flow{ list-style:none; margin:0; padding:0; counter-reset:step; }
+.flow li{
+  counter-increment:step;
+  display:grid; grid-template-columns:34px 1fr; gap:14px;
+  padding:15px 0;
+  border-bottom:1px solid var(--rule-2);
+}
+.flow li:last-child{ border-bottom:0; }
+.flow li::before{
+  content:counter(step);
+  font-family:var(--f-mono); font-weight:500; font-size:13px;
+  width:28px; height:28px; border-radius:999px;
+  display:grid; place-items:center;
+  border:1px solid var(--rule);
+  color:var(--ink-2);
+  background:var(--card);
+}
+.flow b{ display:block; font-weight:600; font-size:15px; }
+.flow span{ display:block; font-size:13.5px; color:var(--ink-2); line-height:1.65; }
+.flow li[data-line]::before{
+  border-color:var(--line); color:var(--line); background:#fff;
+}
+
+/* ============================================================
+   首頁：店家資訊
+   ============================================================ */
+.info{ background:var(--card); border-radius:var(--r-m); box-shadow:var(--sh-1); overflow:hidden; }
+.info__row{
+  display:grid; grid-template-columns:76px 1fr; gap:10px;
+  padding:14px 16px;
+  border-bottom:1px solid var(--rule-2);
+  font-size:14px;
+}
+.info__row:last-child{ border-bottom:0; }
+.info__k{ color:var(--ink-3); font-size:13px; }
+
+/* ============================================================
+   按鈕
+   ============================================================ */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  width:100%;
+  border:0; border-radius:var(--r-s);
+  padding:15px 20px;
+  font-family:var(--f-body); font-size:16px; font-weight:600;
+  cursor:pointer;
+  background:var(--kon); color:#fff;
+  transition:transform .08s ease, background-color .15s ease;
+}
+.btn:active{ transform:scale(.985); }
+.btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+.btn--line{ background:var(--line); }
+.btn--line:hover{ background:var(--line-dark); }
+.btn__line-icon{ width:22px; height:22px; flex:none; }
+
+.btn--ghost{
+  background:transparent; color:var(--ink);
+  border:1px solid var(--rule);
+}
+.btn--sm{ padding:11px 16px; font-size:14px; width:auto; }
+.btn.is-busy{ opacity:.75; }
+
+/* 首頁固定 CTA */
+.cta{
+  position:sticky; bottom:0; z-index:30;
+  padding:14px 20px calc(14px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top, var(--paper) 62%, rgba(237,241,246,0));
+}
+.cta__in{ max-width:var(--wrap); margin:0 auto; }
+.cta__note{
+  text-align:center; font-size:12px; color:var(--ink-3);
+  margin:9px 0 0;
+}
+
+/* ============================================================
+   點餐頁：分類頁籤
+   ============================================================ */
+.tabs{
+  background:var(--paper);
+  border-bottom:1px solid var(--rule);
+}
+.tabs__in{
+  max-width:var(--wrap); margin:0 auto;
+  display:flex; gap:4px; overflow-x:auto;
+  padding:9px 20px;
+  scrollbar-width:none;
+}
+.tabs__in::-webkit-scrollbar{ display:none; }
+.tab{
+  flex:none;
+  border:0; background:transparent;
+  font-family:var(--f-body); font-size:14.5px; font-weight:500;
+  color:var(--ink-2);
+  padding:7px 13px; border-radius:999px;
+  cursor:pointer; white-space:nowrap;
+}
+.tab[aria-selected="true"]{ background:var(--kon); color:#fff; font-weight:600; }
+
+/* ============================================================
+   點餐頁：菜色列
+   ============================================================ */
+.cat{ padding-top:26px; }
+.cat__title{
+  font-family:var(--f-display);
+  font-size:19px; font-weight:700; letter-spacing:.08em;
+  margin:0 0 12px;
+}
+.dishes{ background:var(--card); border-radius:var(--r-m); box-shadow:var(--sh-1); overflow:hidden; }
+
+.dish{
+  display:grid;
+  grid-template-columns:64px 1fr auto;
+  gap:13px; align-items:center;
+  padding:14px 14px;
+  border-bottom:1px solid var(--rule-2);
+  cursor:pointer;
+  background:none; border-left:0; border-right:0; border-top:0;
+  width:100%; text-align:left;
+  font-family:var(--f-body);
+}
+.dish:last-child{ border-bottom:0; }
+.dish:active{ background:#F7F9FC; }
+
+.dish__name{
+  font-family:var(--f-display);
+  font-weight:700; font-size:15.5px;
+  margin:0 0 2px;
+  display:flex; align-items:center; gap:6px;
+}
+.dish__hot{
+  font-family:var(--f-body);
+  font-size:10px; font-weight:600; letter-spacing:.06em;
+  color:#8A6410; background:var(--yamabuki-soft);
+  border-radius:3px; padding:1px 5px;
+}
+.dish__desc{
+  font-size:12.5px; color:var(--ink-3); line-height:1.5;
+  margin:0 0 4px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.dish__price{
+  font-family:var(--f-mono); font-weight:500; font-size:13.5px;
+  color:var(--yamabuki);
+}
+.dish__add{
+  flex:none;
+  width:34px; height:34px; border-radius:999px;
+  border:1px solid var(--rule);
+  background:var(--card); color:var(--kon);
+  font-size:20px; line-height:1; cursor:pointer;
+  display:grid; place-items:center;
+  position:relative;
+}
+.dish__add:active{ background:var(--kon); color:#fff; }
+.dish__count{
+  position:absolute; top:-5px; right:-5px;
+  min-width:18px; height:18px; padding:0 4px;
+  border-radius:999px;
+  background:var(--kon); color:#fff;
+  font-family:var(--f-mono); font-size:10px; font-weight:700;
+  line-height:18px; text-align:center;
+}
+
+/* ============================================================
+   點餐頁：底部結帳列
+   ============================================================ */
+.checkoutbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:50;
+  background:var(--card);
+  border-top:1px solid var(--rule);
+  padding:10px 20px calc(10px + env(safe-area-inset-bottom));
+  transform:translateY(120%);
+  transition:transform .28s cubic-bezier(.2,.85,.25,1);
+}
+.checkoutbar--on{ transform:none; }
+.checkoutbar__in{
+  max-width:var(--wrap); margin:0 auto;
+  display:flex; align-items:center; gap:12px;
+}
+.checkoutbar__sum{ flex:1; min-width:0; }
+.checkoutbar__k{ font-size:11.5px; color:var(--ink-3); }
+.checkoutbar__v{ font-family:var(--f-mono); font-weight:700; font-size:19px; }
+.checkoutbar .btn{ width:auto; padding:14px 26px; }
+
+/* ============================================================
+   Bottom sheet（餐點細節 / 購物車 / 結帳）
+   ============================================================ */
+.sheet{ position:fixed; inset:0; z-index:60; }
+.sheet__backdrop{
+  position:absolute; inset:0;
+  background:rgba(17,28,51,.5);
+  opacity:0; transition:opacity .26s ease;
+}
+.sheet__panel{
+  position:absolute; left:0; right:0; bottom:0;
+  max-width:var(--wrap); margin:0 auto;
+  background:var(--card);
+  border-radius:var(--r-l) var(--r-l) 0 0;
+  padding:8px 20px calc(20px + env(safe-area-inset-bottom));
+  max-height:88vh; overflow-y:auto;
+  transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.2,.85,.25,1);
+  box-shadow:var(--sh-2);
+}
+.sheet--open .sheet__backdrop{ opacity:1; }
+.sheet--open .sheet__panel{ transform:none; }
+
+.sheet__grip{
+  width:38px; height:4px; border-radius:99px;
+  background:var(--rule);
+  margin:0 auto 16px;
+}
+.sheet__title{
+  font-family:var(--f-display);
+  font-size:20px; font-weight:700;
+  margin:0 0 4px;
+}
+.sheet__sub{ font-size:13px; color:var(--ink-3); margin:0 0 18px; line-height:1.6; }
+
+/* 加料 */
+.opt{
+  display:flex; align-items:center; gap:11px;
+  padding:12px 0;
+  border-bottom:1px solid var(--rule-2);
+  cursor:pointer;
+  font-size:15px;
+}
+.opt input{ width:19px; height:19px; accent-color:var(--kon); flex:none; }
+.opt__price{ margin-left:auto; font-family:var(--f-mono); font-size:13px; color:var(--ink-3); }
+
+/* 數量 */
+.qty{ display:flex; align-items:center; gap:14px; }
+.qty__btn{
+  width:38px; height:38px; border-radius:999px;
+  border:1px solid var(--rule); background:var(--card);
+  font-size:20px; line-height:1; color:var(--kon); cursor:pointer;
+}
+.qty__n{ font-family:var(--f-mono); font-weight:700; font-size:17px; min-width:26px; text-align:center; }
+
+.field{ margin:16px 0; }
+.field__label{ display:block; font-size:13px; font-weight:600; margin:0 0 7px; }
+.field__hint{ font-size:12px; color:var(--ink-3); margin:6px 0 0; }
+.input, .textarea, .select{
+  width:100%;
+  font-family:var(--f-body); font-size:16px;
+  padding:12px 13px;
+  border:1px solid var(--rule);
+  border-radius:var(--r-s);
+  background:var(--card); color:var(--ink);
+}
+.textarea{ min-height:74px; resize:vertical; }
+.input:focus, .textarea:focus, .select:focus{ border-color:var(--indigo); outline:none; }
+
+/* 內用 / 外帶 */
+.seg{ display:grid; grid-template-columns:1fr 1fr; gap:6px; background:var(--rule-2); padding:4px; border-radius:10px; }
+.seg button{
+  border:0; background:transparent; cursor:pointer;
+  font-family:var(--f-body); font-size:14.5px; font-weight:600; color:var(--ink-2);
+  padding:10px; border-radius:7px;
+}
+.seg button[aria-pressed="true"]{ background:var(--card); color:var(--ink); box-shadow:var(--sh-1); }
+
+/* 購物車列 */
+.cline{
+  display:grid; grid-template-columns:1fr auto auto;
+  gap:12px; align-items:center;
+  padding:13px 0;
+  border-bottom:1px solid var(--rule-2);
+}
+.cline__name{ font-weight:600; font-size:15px; }
+.cline__meta{ font-size:12px; color:var(--ink-3); margin-top:2px; }
+.cline__sum{ font-family:var(--f-mono); font-size:14px; min-width:62px; text-align:right; }
+.cline__q{ display:flex; align-items:center; gap:8px; }
+.cline__q button{
+  width:28px; height:28px; border-radius:999px;
+  border:1px solid var(--rule); background:var(--card);
+  font-size:15px; line-height:1; cursor:pointer; color:var(--kon);
+}
+.cline__q span{ font-family:var(--f-mono); font-size:14px; min-width:16px; text-align:center; }
+
+.tot{
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:16px 0 6px;
+  font-weight:700;
+}
+.tot__v{ font-family:var(--f-mono); font-size:22px; }
+
+.empty{ text-align:center; padding:34px 0; color:var(--ink-3); font-size:14px; }
+
+/* 已驗證身分（結帳頁）*/
+.who{
+  display:flex; align-items:center; gap:11px;
+  background:#F1FAF4;
+  border:1px solid #CFEEDC;
+  border-radius:var(--r-s);
+  padding:11px 13px;
+  margin:16px 0;
+}
+.who__pic{ width:36px; height:36px; border-radius:999px; object-fit:cover; background:var(--line); flex:none; display:grid; place-items:center; color:#fff; font-weight:700; }
+.who__name{ font-weight:600; font-size:14.5px; }
+.who__tag{ font-size:11.5px; color:#1E7A45; }
+
+/* ============================================================
+   LINE 驗證閘門
+   ============================================================ */
+.gate{ position:fixed; inset:0; z-index:70; visibility:hidden; }
+.gate--open{ visibility:visible; }
+.gate__backdrop{
+  position:absolute; inset:0;
+  background:rgba(17,28,51,.62);
+  backdrop-filter:blur(2px);
+  opacity:0; transition:opacity .26s ease;
+}
+.gate--open .gate__backdrop{ opacity:1; }
+
+.gate__sheet{
+  position:absolute; left:0; right:0; bottom:0;
+  max-width:var(--wrap); margin:0 auto;
+  background:var(--card);
+  border-radius:var(--r-l) var(--r-l) 0 0;
+  padding:8px 24px calc(24px + env(safe-area-inset-bottom));
+  transform:translateY(100%);
+  transition:transform .32s cubic-bezier(.2,.85,.25,1);
+  box-shadow:var(--sh-2);
+  text-align:center;
+}
+.gate--open .gate__sheet{ transform:none; }
+
+.gate__grip{ width:38px; height:4px; border-radius:99px; background:var(--rule); margin:0 auto 20px; }
+
+.gate__mark{
+  width:52px; height:52px; border-radius:16px;
+  background:var(--line); color:#fff;
+  display:grid; place-items:center;
+  margin:0 auto 16px;
+}
+.gate__mark svg{ width:30px; height:30px; }
+
+.gate__title{
+  font-family:var(--f-display);
+  font-size:20px; font-weight:700; line-height:1.5;
+  margin:0 0 10px;
+}
+.gate__body{
+  font-size:14px; color:var(--ink-2); line-height:1.75;
+  margin:0 0 18px;
+}
+.gate__body strong{ color:var(--ink); }
+
+.gate__facts{
+  list-style:none; margin:0 0 22px; padding:0;
+  text-align:left;
+  border:1px solid var(--rule-2);
+  border-radius:var(--r-s);
+  overflow:hidden;
+}
+.gate__facts li{
+  display:flex; align-items:center; gap:10px;
+  padding:11px 13px;
+  font-size:13.5px;
+  border-bottom:1px solid var(--rule-2);
+}
+.gate__facts li:last-child{ border-bottom:0; }
+.gate__yes, .gate__no{
+  flex:none;
+  font-size:11px; font-weight:700;
+  border-radius:4px; padding:2px 7px;
+}
+.gate__yes{ background:#E6F7EC; color:#1E7A45; }
+.gate__no { background:#F1F3F7; color:var(--ink-3); }
+
+.gate__later{
+  display:block; width:100%;
+  background:none; border:0; cursor:pointer;
+  font-family:var(--f-body); font-size:14px; color:var(--ink-3);
+  padding:15px 0 4px;
+  text-decoration:underline; text-underline-offset:3px;
+}
+.gate__err{
+  margin:14px 0 0;
+  font-size:13px; color:var(--danger);
+  background:#FDF0EF; border-radius:var(--r-s); padding:10px 12px;
+  text-align:left; line-height:1.6;
+}
+
+/* ============================================================
+   食券 — 訂單完成的憑證（本站的簽名式）
+   ============================================================ */
+.ticket{
+  position:relative;
+  background:var(--card);
+  border-radius:var(--r-s);
+  box-shadow:var(--sh-1);
+  padding:22px 20px 20px;
+  margin:4px 0 20px;
+  animation:print .55s cubic-bezier(.2,.85,.25,1) both;
+}
+@keyframes print{
+  from{ transform:translateY(-14px) rotate(-.6deg); opacity:0; }
+  to  { transform:none; opacity:1; }
+}
+
+/* 打洞 */
+.ticket::before{
+  content:"";
+  position:absolute; left:18px; top:16px;
+  width:11px; height:11px; border-radius:999px;
+  border:1px solid var(--rule);
+  background:var(--paper);
+}
+.ticket__kind{
+  font-family:var(--f-mono);
+  font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--ink-3);
+  text-align:right;
+  margin:0 0 2px;
+}
+.ticket__label{
+  font-family:var(--f-display);
+  font-size:15px; font-weight:700; letter-spacing:.3em;
+  text-align:right; color:var(--kon);
+  margin:0 0 16px;
+}
+.ticket__no{
+  font-family:var(--f-mono); font-weight:700;
+  font-size:26px; letter-spacing:.06em;
+  margin:0;
+}
+.ticket__mode{
+  font-size:13px; color:var(--ink-2);
+  margin:2px 0 16px;
+}
+.ticket__rule{ height:1px; background:var(--rule-2); margin:0 0 12px; }
+
+.ticket__line{
+  display:grid; grid-template-columns:1fr auto auto;
+  gap:10px; align-items:baseline;
+  padding:5px 0;
+  font-size:14px;
+}
+.ticket__line small{ display:block; color:var(--ink-3); font-size:11.5px; }
+.ticket__q, .ticket__p{ font-family:var(--f-mono); font-size:13px; }
+.ticket__q{ color:var(--ink-3); }
+.ticket__p{ min-width:56px; text-align:right; }
+
+.ticket__total{
+  display:flex; justify-content:space-between; align-items:baseline;
+  border-top:1px solid var(--rule-2);
+  margin-top:10px; padding-top:12px;
+  font-weight:700;
+}
+.ticket__total b{ font-family:var(--f-mono); font-size:20px; }
+
+/* 撕線 */
+.ticket__tear{
+  margin:18px -20px 16px;
+  border-top:1px dashed var(--rule);
+  position:relative;
+}
+.ticket__tear::before,
+.ticket__tear::after{
+  content:"";
+  position:absolute; top:-9px;
+  width:18px; height:18px; border-radius:999px;
+  background:var(--paper);
+}
+.ticket__tear::before{ left:-9px; }
+.ticket__tear::after { right:-9px; }
+
+/* 驗證章 */
+.stamp{ display:flex; align-items:center; gap:13px; }
+.stamp__ring{
+  position:relative;
+  width:52px; height:52px; border-radius:999px; flex:none;
+  border:2px solid var(--yamabuki);
+  padding:3px;
+}
+.stamp__pic{
+  width:100%; height:100%; border-radius:999px; object-fit:cover;
+  background:var(--kon); color:#fff;
+  display:grid; place-items:center; font-weight:700; font-size:17px;
+}
+.stamp__check{
+  position:absolute; right:-3px; bottom:-3px;
+  width:19px; height:19px; border-radius:999px;
+  background:var(--line); color:#fff;
+  border:2px solid var(--card);
+  font-size:10px; line-height:15px; text-align:center; font-weight:700;
+}
+.stamp__name{ font-weight:600; font-size:15px; }
+.stamp__meta{ font-size:12px; color:var(--ink-3); font-family:var(--f-mono); }
+
+.notice{
+  font-size:12.5px; color:var(--ink-2);
+  background:var(--yamabuki-soft);
+  border-radius:var(--r-s);
+  padding:11px 13px;
+  line-height:1.65;
+  margin:0 0 16px;
+}
+
+/* 我的訂單：小張存根 */
+.stub{
+  background:var(--card); border-radius:var(--r-s); box-shadow:var(--sh-1);
+  padding:15px 16px; margin-bottom:11px;
+}
+.stub__top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.stub__no{ font-family:var(--f-mono); font-weight:700; font-size:15px; }
+.stub__date{ font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3); }
+.stub__items{ font-size:13px; color:var(--ink-2); margin:6px 0 0; line-height:1.6; }
+.stub__bot{ display:flex; justify-content:space-between; margin-top:9px; font-size:13px; }
+.stub__sum{ font-family:var(--f-mono); font-weight:700; }
+
+/* ============================================================
+   Toast / 測試條 / 頁尾
+   ============================================================ */
+.toast{
+  position:fixed; left:50%; bottom:calc(var(--bar) + 22px); z-index:90;
+  transform:translate(-50%, 14px);
+  background:var(--kon-deep); color:#fff;
+  font-size:14px; padding:11px 18px; border-radius:999px;
+  box-shadow:var(--sh-2);
+  opacity:0; pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+  max-width:88vw; text-align:center;
+}
+.toast--show{ opacity:1; transform:translate(-50%, 0); }
+.toast--bad{ background:var(--danger); }
+
+.devbar{
+  background:var(--yamabuki-soft);
+  color:#6E5210;
+  font-size:12px; line-height:1.5;
+  padding:8px 20px;
+  text-align:center;
+  border-bottom:1px solid #EBDCB6;
+}
+
+.foot{
+  margin-top:40px;
+  padding:26px 20px calc(26px + env(safe-area-inset-bottom));
+  background:var(--kon-deep); color:rgba(255,255,255,.5);
+  font-size:12.5px; text-align:center; line-height:1.9;
+}
+.foot a{ color:rgba(255,255,255,.75); }
+
+.pagepad{ padding-bottom:calc(var(--bar) + 30px); }
+
+/* ---------- 動效偏好 ---------- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
+}

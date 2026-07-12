@@ -1,0 +1,9 @@
+# 把整個資料夾拖到 https://app.netlify.com/drop 就會上線（自帶 HTTPS）
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>順吉 SHUNJI｜定食・丼飯・拉麵</title>
+<meta name="description" content="順吉線上訂餐。用 LINE 驗證身分，一分鐘完成點餐。">
+<meta name="theme-color" content="#1B2C51">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- 暖簾：進到店裡的第一眼 -->
+<header class="noren">
+  <div class="noren__inner">
+    <p class="noren__eyebrow" id="shopEn">SHUNJI</p>
+    <h1 class="noren__name" id="shopName">順吉</h1>
+    <p class="noren__tag" id="shopTag">定食・丼飯・拉麵</p>
+    <p class="noren__meta" id="shopMeta"></p>
+  </div>
+  <div class="noren__fringe" aria-hidden="true"></div>
+</header>
+
+<main class="pagepad">
+
+  <section class="sec wrap">
+    <div class="sec__head">
+      <div>
+        <p class="eyebrow">Today</p>
+        <h2 class="sec__title">今日推薦</h2>
+      </div>
+    </div>
+    <div class="rail" id="picks"></div>
+  </section>
+
+  <section class="sec wrap">
+    <p class="eyebrow">How it works</p>
+    <h2 class="sec__title">訂餐怎麼跑</h2>
+    <ol class="flow">
+      <li>
+        <b>選餐點</b>
+        <span>菜單直接看，不用登入。</span>
+      </li>
+      <li data-line>
+        <b>用 LINE 確認身分</b>
+        <span>按下送單前，LINE 會問你要不要同意。同意後我們只拿到你的名稱和大頭貼，確認這張單是誰點的。</span>
+      </li>
+      <li>
+        <b>送出，等叫號</b>
+        <span>訂單會直接進廚房。訂單編號請留著，取餐時報號碼。</span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="sec wrap">
+    <p class="eyebrow">Shop</p>
+    <h2 class="sec__title">店家資訊</h2>
+    <div class="info" id="info"></div>
+  </section>
+
+</main>
+
+<!-- 主要動作：進入點餐 -->
+<div class="cta">
+  <div class="cta__in">
+    <a class="btn" href="order.html" id="startBtn">立即訂餐</a>
+    <p class="cta__note">送出訂單前需要用 LINE 確認身分</p>
+  </div>
+</div>
+
+<footer class="foot">
+  <div id="footMeta"></div>
+  <div style="margin-top:8px"><a href="orders.html">我的訂單</a></div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/menu-data.js"></script>
+<script src="assets/js/liff-auth.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/home.js"></script>
+</body>
+</html>
