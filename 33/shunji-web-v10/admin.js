@@ -194,9 +194,10 @@ window.SJ_ADMIN = {
     return Math.max(0, q - s);
   },
   notice   : function(){ return { text: readOv().notice || '', type: readOv().noticeType || 'info' }; },
-  /* 客人送出訂單後 → 記錄到本機（不會影響其他客人看到的庫存）*/
+  /* 客人送出訂單後 → 記錄到本機 ＋ 扣庫存（soldToday +1）*/
   logOrder : function(items){
     try{
+      /* ① 記錄訂單 */
       var log = JSON.parse(ST.get('sj_orders_log') || '[]');
       if(!Array.isArray(log)) log = [];
       log.unshift({
@@ -206,6 +207,15 @@ window.SJ_ADMIN = {
       /* 只保留最近 50 筆 */
       if(log.length > 50) log = log.slice(0, 50);
       ST.set('sj_orders_log', JSON.stringify(log));
+
+      /* ② 扣庫存：把 soldToday 加上去 */
+      var ov = readOv();
+      items.forEach(function(it){
+        if(!it.n || !it.q) return;
+        var prev = ov.soldToday[it.n] || 0;
+        ov.soldToday[it.n] = prev + it.q;
+      });
+      writeOv(ov);
     }catch(e){}
   },
   getOrders : function(){
